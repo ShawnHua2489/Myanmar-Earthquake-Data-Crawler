@@ -9,7 +9,7 @@ from datetime import datetime
 import os
 import shutil
 
-class DataVisualizer:
+class EarthquakeDataVisualizer:
     def __init__(self):
         self.earthquake_data = None
         self.visualization_dirs = {
@@ -27,13 +27,23 @@ class DataVisualizer:
             os.makedirs(dir_name)
 
     def load_data(self):
-        """Load the most recent JSON files"""
-        files = os.listdir('.')
+        """Load the most recent JSON files from data_files directory"""
+        data_dir = 'data_files'
+        if not os.path.exists(data_dir):
+            print(f"Error: {data_dir} directory not found")
+            return
+
+        files = os.listdir(data_dir)
         earthquake_files = [f for f in files if f.startswith('earthquake_info_')]
 
         if earthquake_files:
-            with open(max(earthquake_files), 'r') as f:
+            latest_file = max(earthquake_files)
+            filepath = os.path.join(data_dir, latest_file)
+            with open(filepath, 'r') as f:
                 self.earthquake_data = json.load(f)
+                print(f"Loaded {len(self.earthquake_data)} earthquake records from {latest_file}")
+        else:
+            print("No earthquake data files found")
 
     def save_visualization(self, filename, dir_type='new'):
         """Save visualization to appropriate directory"""
@@ -130,5 +140,5 @@ class DataVisualizer:
         print(f"Visualizations completed! Check the {self.visualization_dirs['new']} directory for new visualizations.")
 
 if __name__ == "__main__":
-    visualizer = DataVisualizer()
+    visualizer = EarthquakeDataVisualizer()
     visualizer.run_all_visualizations() 

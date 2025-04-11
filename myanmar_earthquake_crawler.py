@@ -1,21 +1,17 @@
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
 from datetime import datetime
 import json
-import time
 import os
 import shutil
 
-class MyanmarEarthquakeCrawler:
+class MyanmarEarthquakeDataCollector:
     def __init__(self):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         self.data = {
-            'earthquake_info': [],
-            'humanitarian_updates': [],
-            'aid_efforts': []
+            'earthquake_info': []
         }
         self.data_dir = 'data_files'
         self.setup_directory()
@@ -27,7 +23,7 @@ class MyanmarEarthquakeCrawler:
         os.makedirs(self.data_dir)
 
     def get_usgs_data(self):
-        """Fetch earthquake data from USGS"""
+        """Fetch earthquake data from USGS API"""
         try:
             # USGS API endpoint for recent earthquakes in Myanmar region
             url = "https://earthquake.usgs.gov/fdsnws/event/1/query"
@@ -53,51 +49,30 @@ class MyanmarEarthquakeCrawler:
                         'url': feature['properties']['url']
                     }
                     self.data['earthquake_info'].append(earthquake)
+            else:
+                print(f"Error: Received status code {response.status_code} from USGS API")
         except Exception as e:
             print(f"Error fetching USGS data: {str(e)}")
-
-    def get_reliefweb_data(self):
-        """Fetch humanitarian updates from ReliefWeb"""
-        try:
-            url = "https://reliefweb.int/country/mmr"
-            response = requests.get(url, headers=self.headers)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'lxml')
-                updates = soup.find_all('article', class_='rw-river-article')
-                
-                for update in updates:
-                    title = update.find('h3').text.strip()
-                    date = update.find('time').text.strip()
-                    link = update.find('a')['href']
-                    
-                    humanitarian_update = {
-                        'title': title,
-                        'date': date,
-                        'link': link
-                    }
-                    self.data['humanitarian_updates'].append(humanitarian_update)
-        except Exception as e:
-            print(f"Error fetching ReliefWeb data: {str(e)}")
 
     def save_data(self):
         """Save collected data to JSON files"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         for category, data in self.data.items():
-            filename = f'{category}_{timestamp}.json'
-            filepath = os.path.join(self.data_dir, filename)
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            print(f"Saved {len(data)} {category} records to {filepath}")
+            if data:  # Only save if there's data
+                filename = f'{category}_{timestamp}.json'
+                filepath = os.path.join(self.data_dir, filename)
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+                print(f"Saved {len(data)} {category} records to {filepath}")
 
     def run(self):
-        """Run all crawlers"""
-        print("Starting data collection...")
+        """Run data collection"""
+        print("Starting data collection from USGS API...")
         self.get_usgs_data()
-        self.get_reliefweb_data()
         self.save_data()
         print("Data collection completed!")
 
 if __name__ == "__main__":
-    crawler = MyanmarEarthquakeCrawler()
-    crawler.run() 
+    collector = MyanmarEarthquakeDataCollector()
+    collector.run() 
